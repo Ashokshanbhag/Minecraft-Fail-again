@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html>
+    <head>
+
+        <title>
+            Minecraft
+        </title>
+        <style>
+            body{
+
+                margin: 0;
+
+            }
+    
+        </style>
+
+    </head>
+    <body>
+
+
+        <script src="three.js"></script>
+        <script src="perlin.js"></script>
+        <script src="PointerLockControls.js"></script>
+        <script type="text/javascript">
+
+            //To make sure every world is random
+            noise.seed(Math.random());
+
+            
+            var scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x00ffff)
+            var renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+            var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            
+
+            var loader = new THREE.TextureLoader();
+            var materialArray = [
+
+                new THREE.MeshBasicMaterial({map : loader.load("Texture/BACK.jpg")}),
+                new THREE.MeshBasicMaterial({map : loader.load("Texture/LEFT.jpg")}),
+                new THREE.MeshBasicMaterial({map : loader.load("Texture/TOP.jpg")}),
+                new THREE.MeshBasicMaterial({map : loader.load("Texture/BOTTOM.jpg")}),
+                new THREE.MeshBasicMaterial({map : loader.load("Texture/RIGHT.jpg")}),
+                new THREE.MeshBasicMaterial({map : loader.load("Texture/BACK copy.jpg")})
+
+            ];
+
+            function Block(x, y, z){
+
+                this.x = x;
+                this.y = y;
+                this.z = z;
+                this.mesh;
+
+                this.display = function(){
+
+                    var blockBox = new THREE.BoxBufferGeometry(5, 5, 5);
+                    this.mesh = new THREE.Mesh(blockBox, materialArray);
+                    scene.add(this.mesh);
+                    this.mesh.position.x = this.x;
+                    this.mesh.position.y = this.y - 10;
+                    this.mesh.position.z = this.z;
+                    /*
+                    var edges = new THREE.EdgesGeometry(blockBox);
+                    var line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({color: 0x0000000}));
+                    scene.add(line);
+                    line.position.x = this.x;
+                    line.position.y = this.y - 10;
+                    line.position.z = this.z;
+                    */
+
+                }
+
+            }
+
+            var chunks = [];
+            var xoff = 0;
+            var xoff = 0;
+            var inc = 0.05;
+            var amplitude = 30 + (Math.random() * 70);
+            var renderDistance = 3;
+            var chunkSize = 10;
+            camera.position.x = renderDistance * chunkSize / 2 * 5;
+            camera.position.z = renderDistance * chunkSize / 2 * 5;
+            camera.position.y = 50;
+            for(var  i = 0; i < renderDistance; i++){
+                for(var j = 0; j < renderDistance; j++){
+                    var chunk = [];
+                    for(var x = i * chunkSize; x < (i * chunkSize) + chunkSize; x++){
+                        for(var z = j * chunkSize; z < (j * chunkSize) + chunkSize; z++){
+                            xoff = inc * x;
+                            zoff = inc * z;
+                            var v = Math.round(noise.perlin2(xoff, zoff) * amplitude / 5) * 5;
+                            chunk.push(new Block(x * 5, v, z * 5));
+                        }
+                    }
+                    chunks.push(chunk);
+                }
+            }
+
+
+            for(var i = 0; i< chunks.length; i++){
+                for(var j = 0;  j < chunks[i].length; j++){
+
+                    chunks[i][j].display();
+
+                }
+
+            }
+
+            var keys = [];
+            var canJump = true;
+            document.addEventListener("keydown", function(e){
+
+                keys.push(e.key);
+                if(e.key == " " && canJump == true){
+
+                    ySpeed = -1;
+                    canJump = false;
+
+                }
+
+            });
+            document.addEventListener("keyup", function(e){
+
+                var newArr = [];
+                for(var i = 0; i <keys.length; i++){
+
+                    if(keys[i] != e.key){
+
+                        newArr.push(keys[i]);
+
+                    }
+
+                }
+                keys = newArr;
+
+            });
+
+
+            var controls = new THREE.PointerLockControls(camera, document.body);
+            document.body.addEventListener("click", function(){
+
+                controls.lock();
+
+            });
+            controls.addEventListener("lock", function(){
+
+
+
+            });
+            controls.addEventListener("unlock", function(){
+
+
+
+            });
+
+            autoJump = false;
+            //for toggleing auto jump (it dont work tho)
+            function toggleAutoJump(){
+
+                if(autoJump == true){
+
+                    autoJump == false;
+                    document.getElementById("button").innerHTML = "AutoJump: off";
+
+                }
+                else if(autoJump == false){
+
+                    autoJump == true;
+                    document.getElementById("button").innerHTML = "AutoJump: on";
+
+                }
+
+            }
+            
+            var movingSpeed = 0.5;
+            var ySpeed = 0;
+            var acc = 0.08;
+            function update(){
+
+                if(keys.includes("w")){
+
+                    controls.moveForward(movingSpeed);
+                    if(autoJump == false){
+                        for(var i = 0; i< chunks.length; i++){
+                            for(var j = 0; j< chunks[i].length; j++){
+                                if(camera.position.x <= chunks[i][j].x + 2.5 && camera.position.x >= chunks[i][j].x - 2.5 && camera.position.z <= chunks[i][j].z + 2.5 && camera.position.z >= chunks[i][j].z - 2.5){
+
+                                    if(camera.position.y == chunks[i][j].y - 2.5){
+
+                                        controls.moveForward(-1  * movingSpeed);
+
+                                    }
+
+                                }
+                            }
+                        }
+                    }   
+                }
+                if(keys.includes("a")){
+
+                    controls.moveRight(-1 * movingSpeed);
+                    if(autoJump == false){
+                        for(var i = 0; i< chunks.length; i++){
+                            for(var j = 0; j< chunks[i].length; j++){
+                                if(camera.position.x <= chunks[i][j].x + 2.5 && camera.position.x >= chunks[i][j].x - 2.5 && camera.position.z <= chunks[i][j].z + 2.5 && camera.position.z >= chunks[i][j].z - 2.5){
+
+                                    if(camera.position.y == chunks[i][j].y - 2.5){
+
+                                        controls.moveRight(movingSpeed);
+
+                                    }
+
+                                }
+                            }
+                        }
+                    }   
+                }
+                if(keys.includes("s")){
+
+                    controls.moveForward(-1 * movingSpeed);
+                    if(autoJump == false){
+                        for(var i = 0; i< chunks.length; i++){
+                            for(var j = 0; j< chunks[i].length; j++){
+                                if(camera.position.x <= chunks[i][j].x + 2.5 && camera.position.x >= chunks[i][j].x - 2.5 && camera.position.z <= chunks[i][j].z + 2.5 && camera.position.z >= chunks[i][j].z - 2.5){
+
+                                    if(camera.position.y == chunks[i][j].y - 2.5){
+
+                                        controls.moveForward(movingSpeed);
+
+                                    }
+
+                                }
+                            }
+                        }
+                    }  
+
+                }
+                if(keys.includes("d")){
+
+                    controls.moveRight(movingSpeed);
+                    if(autoJump == false){
+                        for(var i = 0; i< chunks.length; i++){
+                            for(var j = 0; j< chunks[i].length; j++){
+                                if(camera.position.x <= chunks[i][j].x + 2.5 && camera.position.x >= chunks[i][j].x - 2.5 && camera.position.z <= chunks[i][j].z + 2.5 && camera.position.z >= chunks[i][j].z - 2.5){
+
+                                    if(camera.position.y == chunks[i][j].y - 2.5){
+
+                                        controls.moveRight(-1  * movingSpeed);
+
+                                    }
+
+                                }
+                            }
+                        }
+                    }
+                }
+
+                camera.position.y = camera.position.y - ySpeed;
+                ySpeed = ySpeed + acc;
+
+                for(var i = 0; i< chunks.length; i++){
+                    for(var j = 0; j< chunks[i].length; j++){
+                        if(camera.position.x <= chunks[i][j].x + 2.5 && camera.position.x >= chunks[i][j].x - 2.5 && camera.position.z <= chunks[i][j].z + 2.5 && camera.position.z >= chunks[i][j].z - 2.5){
+
+                            if(camera.position.y <= chunks[i][j].y + 2.5 && camera.position.y >= chunks[i][j].y - 2.5){
+
+                                camera.position.y = chunks[i][j].y + 2.5;
+                                ySpeed = 0;
+                                canJump = true;
+                                break;
+
+                            }
+
+                        }
+                    }
+                }
+
+                if(camera.position.z <= lowestZBlock() + 15){
+
+                    for(var i = 0; i < chunks.length; i++){
+                        if((i + 1) % renderDistance == 0){
+                            for(var j = 0; j < chunks[i].length; j++){
+                                scene.remove(chunks[i][j].mesh);
+                            }
+                        }
+                    }
+                    var newChunks = [];
+                    for(var i = 0; i < chunks.length; i++){
+                        if((i + 1) % renderDistance != 0){
+                            newChunks.push(chunks[i]);
+                        }
+                    }
+
+                    var lowestX = lowestXBlock();
+                    var lowestZ = lowestZBlock();
+                    for(var i = 0; i < renderDistance; i++){
+                        var chunk = [];
+                        for(var x = lowestX + (i * chunkSize * 5); x < lowestX + (i * chunkSize * 5) + (chunkSize + 5); x = x + 5){
+                            for(var z = lowestZ - (chunkSize * 5); z < lowestZ; z = z + 5){
+                                xoff = inc * x / 5;
+                                zoff = inc * z / 5;
+                                var v = Math.round(noise.perlin2(xoff, zoff) * amplitude / 5) * 5;
+                                chunk.push(new Block(x, v, z));
+                            }
+                        }
+                        newChunks.splice(i * renderDistance, 0, chunk);
+                    }
+                    chunks = newChunks; 
+
+                    for(var i = 0; i < chunks.length; i++){
+                        if(i % renderDistance == 0){
+                            for(var j = 0; j < chunks[i].length; j++){
+                                chunks[i][j].display();
+                            }
+                        }
+                    }
+                }
+            }
+
+            function lowestXBlock(){
+                
+                var xPosArray = [];
+                for(var i = 0; i < chunks.length; i++){
+                    for(var j = 0; j <chunks[i].length; j++){
+                        xPosArray.push(chunks[i][j].x);
+                    }
+                }
+
+                return Math.min.apply(null, xPosArray);
+
+
+            }
+            function highestXBlock(){
+
+                var xPosArray = [];
+                for(var i = 0; i < chunks.length; i++){
+                    for(var j = 0; j <chunks[i].length; j++){
+                        xPosArray.push(chunks[i][j].x);
+                    }
+                }
+
+                return Math.max.apply(null, xPosArray);
+                
+            }
+            function lowestZBlock(){
+
+                var zPosArray = [];
+                for(var i = 0; i < chunks.length; i++){
+                    for(var j = 0; j <chunks[i].length; j++){
+                        zPosArray.push(chunks[i][j].z);
+                    }
+                }
+
+                return Math.min.apply(null, zPosArray);
+                
+            }
+            function highestZBlock(){
+
+                var zPosArray = [];
+                for(var i = 0; i < chunks.length; i++){
+                    for(var j = 0; j <chunks[i].length; j++){
+                        xPosArray.push(chunks[i][j].z);
+                    }
+                }
+
+                return Math.max.apply(null, zPosArray);
+                
+            }
+
+            //Resize Window
+            window.addEventListener("resize", function(){
+
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+
+            });
+
+            function render(){
+
+                renderer.render(scene, camera);
+
+            }
+
+            function GameLoop(){
+
+                requestAnimationFrame(GameLoop);
+                update();
+                render();
+
+            }
+
+            GameLoop();
+
+        </script>
+
+    </body>
+</html>
